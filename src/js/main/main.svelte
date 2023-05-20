@@ -57,8 +57,9 @@
 
   const buildYtdlpArgs = () => {
     var args = [];
+    const path = require('path');
     args.push(`--ffmpeg-location`);
-    args.push(`"${__dirname}/public"`);
+    args.push(`"${__dirname}${path.sep}public"`);
     args.push(`-f`);
     args.push(`"bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"`);
     if(downloadClip){
@@ -78,7 +79,7 @@
     var videoPath = "";
     var result;
     if(os.platform() == "win32"){
-      result = spawn(`"${__dirname}/public/yt-dlp.exe"`, buildYtdlpArgs(), {shell : true});
+      result = spawn(`"${__dirname}\\public\\yt-dlp.exe"`, buildYtdlpArgs(), {shell : true});
     } else {
       result = spawn(`"${__dirname}/public/yt-dlp_macos"`, buildYtdlpArgs(), {shell : true});
     } 
