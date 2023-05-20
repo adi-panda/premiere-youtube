@@ -72,6 +72,7 @@
   }
   
   const downloadVideo = () => {
+    console.log(downloadClip);
     var url = $currentVideo;
     const {spawn} = require('child_process');
     var videoPath = "";
@@ -154,7 +155,7 @@
     </div>
     <div class = "button-group">
       <label for="downloadClip">Download Clip:</label>
-      <input type="checkbox" bind:value={downloadClip} >
+      <input type="checkbox" bind:checked={downloadClip} >
       <button on:click={downloadVideo}>Inject!</button>
     </div>
     <h5>Download Progress: {downloadPercentage}</h5>
