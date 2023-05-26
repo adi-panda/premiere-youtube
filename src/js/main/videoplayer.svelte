@@ -1,9 +1,10 @@
 <script context="module">
-    let iframeApiReady = false;
+    
   
     import { setContext, onMount } from "svelte";
     import { inPoint, outPoint } from "./stores";
     import {get} from 'svelte/store'
+    let iframeApiReady = false;
     var tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
     var firstScriptTag = document.getElementsByTagName("script")[0];
@@ -18,11 +19,8 @@
     import { getContext } from "svelte";
     export let videoId;
     let player;
-    var loaded = false;
+    var loadedPlayer = false;
     let divId = "player_" + parseInt(Math.random() * 109999);
-    export function play(){
-      player.playVideo()
-    }
     const dispatch = createEventDispatcher();
 
     window.addEventListener("iframeApiReady", function(e) {
@@ -59,8 +57,8 @@
       setInterval(() => {
         dispatch("currentPlayTime", player.getCurrentTime());
         //console.log(player.getCurrentTime())
-        if(!loaded){
-          loaded = true;
+        if(!loadedPlayer){
+          loadedPlayer = true;
           inPoint.update(n => 0 );
           outPoint.update(n => player.getDuration() );
         }
@@ -88,8 +86,7 @@
     };
 
     export const refreshPlayer = () => {
-      loaded = false;
-      player.destroy();
+      if(player) player.destroy();
       createPlayer();
     };
   </script>
