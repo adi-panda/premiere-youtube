@@ -12,6 +12,7 @@
     "delsymlink": "cross-env ACTION=delsymlink vite"
   },
   "dependencies": {
+    "@picocss/pico": "^1.5.10",
     "@vime/core": "^5.4.0",
     "@vime/svelte": "^5.4.0",
     "plyr": "^3.7.8",

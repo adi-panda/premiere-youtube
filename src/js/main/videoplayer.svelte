@@ -86,6 +86,7 @@
     };
 
     export const refreshPlayer = () => {
+      loadedPlayer = false;
       if(player) player.destroy();
       createPlayer();
     };
