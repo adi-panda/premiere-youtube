@@ -30,8 +30,8 @@
     function createPlayer () {
       console.log("yo", divId);
       player = new YT.Player(divId, {
-        height: "292",
-        width: "480",
+        height: "100%",
+        width: "100%",
         videoId,
         events: {
           onReady: playerIsReady,

@@ -32,11 +32,13 @@ export const insertVideoDownload = (videoPath: string) => {
   var activeSequence = app.project.activeSequence;
   var projectItems = app.project.rootItem.children;
   // Import the video file
-
-  var importedClip = app.project.importFiles([videoPath], true);
+  alert(videoPath);
+  var importedClip = app.project.importFiles([videoPath], true, app.project.rootItem, false);
   var videoTrack = activeSequence.videoTracks[activeSequence.videoTracks.numTracks - 1];
   for(var i = 0; i < activeSequence.videoTracks.numTracks; i++){
+    alert("track" + i)
     if (activeSequence.videoTracks[i].isTargeted()){
+      alert("targeted" + i)
       var videoTrack = activeSequence.videoTracks[i];
       break;
     }

@@ -26,6 +26,7 @@
 
   let loaded = false;
   let player;
+  let downloading = false;
   let downloadPercentage = 0;
   let downloadClip = false;
   let audioToggle = false;
@@ -78,6 +79,7 @@
   
   const downloadVideo = () => {
     console.log(downloadClip);
+    downloading = true;
     var url = $currentVideo;
     const {spawn} = require('child_process');
     var videoPath = "";
@@ -94,8 +96,7 @@
         downloadPercentage = data.toString().substring(data.toString().indexOf('%') - 4, data.toString().indexOf('%'));
       }
       if(data.toString().includes('Destination:')){
-        videoPath = data.toString().substring(data.toString().indexOf('Destination:') + 13, data.toString().indexOf('Destination:') + 100);
-        videoPath = videoPath.substring(0, videoPath.indexOf('\n'));
+        videoPath = data.toString().substring(data.toString().indexOf('Destination:') + 13, data.toString().length - 1);
         console.log(videoPath);
       }
       if(data.toString().includes('Merging formats into')) {
@@ -118,6 +119,7 @@
 
     result.on('exit', function (code) {
       console.log('child process exited with code ' + code.toString());
+      downloading = false;
       evalTS("insertVideoDownload", videoPath);
     });
   };
@@ -158,8 +160,10 @@
         <input class = "url-input" placeholder = "Search" type = "search" bind:value={$currentVideo}/>
         <button class = "search-button" on:click={player.refreshPlayer()}>Search</button>
       </div>
-      <YouTube videoId="{$currentVideo.substring(32, 43)}"
-      bind:this={player} />
+      <div class = "youtube-player">
+        <YouTube videoId="{$currentVideo.substring(32, 43)}"
+        bind:this={player} />
+      </div>
     <div class = "button-group">
       <button class = "point-button" on:click={() => player.setInPoint()}>In</button>
       <button class="time-button" on:click={() => player.goToInPoint()} > {displayInPoint} </button>
@@ -174,10 +178,13 @@
       <label for="downloadClip">Download Clip:</label>
       <input type="checkbox" bind:checked={downloadClip} >
     </div>
+    {#if downloading}
+      <progress value="{downloadPercentage}" max="100"></progress>
+    {/if}
     <div class = "inject-group">
-      <button class="secondary" on:click={downloadVideo}>Inject!</button>
+      <button class = "inject-button" on:click={downloadVideo}>Inject!</button>
     </div>
-    <h5>Download Progress: {downloadPercentage}</h5>
+    
 
       <!-- ... -->
     <!-- <div class="button-group">
@@ -196,6 +203,8 @@
 
 </body>
 <style>
+
+
 .inject-group{
   display: flex;
   flex-direction: row;
@@ -207,6 +216,7 @@
 .app-header {
   padding-top: 0%;
 }
+
 .button-group{
   display: flex;
   flex-direction: row;
@@ -215,24 +225,38 @@
   vertical-align: middle;
   margin: 10px;
 }
+.url-input{
+  width: 100%;
+  min-width: 20rem;
+}
+
+.youtube-player{
+  width: 100%;
+  height: 292px;
+}
 
 .time-button{
   background-color: aliceblue;
   color: black;
   padding-left: 0%;
   padding-right: 0%;
-  padding-bottom: 2%;
-  padding-top: 2%;
+  padding-bottom: 3%;
+  padding-top: 3%;
   margin-bottom: 0%;
+  margin-top: 0.25rem;
   width: 5rem;
   border: none;
+}
+progress{
+  width: 22rem;
 }
 
 .point-button{
   width: 3rem;
   margin-bottom: 0%;
-  padding-bottom: 2%;
-  padding-top: 2%;
+  margin-top: 0.25rem;
+  padding-bottom: 3%;
+  padding-top: 3%;
   padding-left: 0%;
   padding-right: 0%;
 }
@@ -245,7 +269,7 @@
   padding-right: 0%;
 }
 .settingsLogo{
-  margin-left: 31rem;
+  margin-left: 28rem;
   width: 32px;
   height: 32px; 
   fill: #fff;
