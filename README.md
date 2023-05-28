@@ -1,4 +1,4 @@
-# YouTube Injector
+# Premiere YouTube Injector
 
 Download videos from YouTube into Adobe Premiere Pro.
 
