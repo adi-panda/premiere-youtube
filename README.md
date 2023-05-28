@@ -11,7 +11,7 @@ Download videos from YouTube into Adobe Premiere Pro.
 
 ### Installation
 
-- Download the `.zxp` file from the realeses section (on the left sidebar) of the github page.
+- Download the `.zxp` file from the _latest release_ (found on the left sidebar of the github page).
 - Use [ZXP Installer](https://aescripts.com/learn/zxp-installer/) to download into Premiere Pro.
 - Open the panel by selecting from the menu `Window > Extensions > Youtube Downloader`
 
