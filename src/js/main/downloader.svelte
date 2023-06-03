@@ -1,9 +1,12 @@
-<script>
+<script lang="ts">
   import { onMount } from "svelte";
   import { os, path } from "../lib/cep/node";
   import {get} from 'svelte/store';
-  import {inPoint, outPoint, currentVideo, download_path, toggleSettings} from './stores'
-
+  import {inPoint, outPoint, 
+          currentVideo, download_path, 
+          toggleSettings, toggleTopTrack, 
+          toggleOverwrite, toggleNoInject, 
+          toggleAudioOnly, toggleVideoOnly, downloadClip} from './stores'
 
   import {
     csi,
@@ -25,27 +28,26 @@
   import { set_data_maybe_contenteditable } from "svelte/internal";
 
   let loaded = false;
-  let player;
+  let player : any;
   let downloading = false;
   let downloadPercentage = 0;
-  let downloadClip = false;
-  let audioToggle = false;
 
   if(!loaded){
     loaded = true;
     if(get(download_path) === ""){
-      evalTS("getFilePath", "test").then((res) => {
+      evalTS("getFilePath").then((res) => {
         download_path.update(n => path.resolve(res, '..'));
       });
     }
   }
+
 
   onMount(() => {
     console.log("mounted");
     player.refreshPlayer();
   });
 
-  function nthIndex(str, pat, n){
+  function nthIndex(str : string, pat : string, n : number){
     var L= str.length, i= -1;
     while(n-- && i++<L){
         i= str.indexOf(pat, i);
@@ -59,21 +61,24 @@
     const path = require('path');
     args.push(`--ffmpeg-location`);
     args.push(`"${__dirname}${path.sep}public"`);
-    if(audioToggle){
+    if(get(toggleAudioOnly)){
       args.push(`-x`);
       args.push(`--audio-format`);
       args.push(`mp3`);
-    } else{
+    } else if (get(toggleVideoOnly)){
+      args.push(`-f`);
+      args.push(`"bestvideo[height<=1080][ext=mp4]"`);
+    }else{
       args.push(`-f`);
       args.push(`"bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"`);
     }
-    if(downloadClip){
+    if(get(downloadClip)){
       args.push(`--download-sections`);
       args.push(`*${$inPoint}-${$outPoint}`);
     }
     args.push(`"${$currentVideo}"`);
-    args.push(`-P`);
-    args.push(`"${get(download_path)}"`);
+    args.push(`-o`);
+    args.push(`"${get(download_path)}${path.sep}%(title)s[${Math.floor((Math.random() * 1000000000))}].%(ext)s"`);
     return args;
   }
   
@@ -90,7 +95,7 @@
       result = spawn(`"${__dirname}/public/yt-dlp_macos"`, buildYtdlpArgs(), {shell : true});
     } 
 
-    result.stdout.on('data', function (data) {
+    result.stdout.on('data', function (data : any) {
       console.log('stdout: ' + data.toString());
       if(data.toString().includes('%')){
         downloadPercentage = data.toString().substring(data.toString().indexOf('%') - 4, data.toString().indexOf('%'));
@@ -113,18 +118,18 @@
       }
     });
 
-    result.stderr.on('data', function (data) {
+    result.stderr.on('data', function (data : any) {
       console.log('stderr: ' + data.toString());
     });
 
-    result.on('exit', function (code) {
+    result.on('exit', function (code : any) {
       console.log('child process exited with code ' + code.toString());
       downloading = false;
-      evalTS("insertVideoDownload", videoPath);
+      evalTS("insertVideoDownload", videoPath, get(toggleOverwrite), get(toggleNoInject), get(toggleTopTrack), get(toggleAudioOnly));
     });
   };
 
-  let displayInPoint;
+  let displayInPoint : string;
   inPoint.subscribe(value => {
     if (value >= 3600){
       displayInPoint = new Date(value * 1000).toISOString().substring(11, 19);
@@ -132,7 +137,7 @@
       displayInPoint = new Date(value * 1000).toISOString().substring(14, 19);
     }
   });
-  let displayOutPoint
+  let displayOutPoint : string;
   outPoint.subscribe(value => {
     if (value >= 3600){
       displayOutPoint = new Date(value * 1000).toISOString().substring(11, 19);
@@ -145,6 +150,22 @@
   const switchSettings = () => {
     toggleSettings.update(n => !n);
   };
+
+  const updateToggles = () => {
+    if(!get(toggleAudioOnly)){
+      toggleVideoOnly.update(n => false);
+      console.log("audio only")
+    }else if(!get(toggleVideoOnly)){
+      toggleAudioOnly.update(n => false);
+      console.log("video only")
+    }
+  };
+
+  const youtube_parser = (url : string) => {
+    var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    var match = url.match(regExp);
+    return (match&&match[7].length==11)? match[7] : false;
+  }
 
 </script>
 
@@ -161,7 +182,7 @@
         <button class = "search-button" on:click={player.refreshPlayer()}>Search</button>
       </div>
       <div class = "youtube-player">
-        <YouTube videoId="{$currentVideo.substring(32, 43)}"
+        <YouTube videoId="{youtube_parser($currentVideo)}"
         bind:this={player} />
       </div>
     <div class = "button-group">
@@ -173,10 +194,14 @@
     </article>
 
     <div class = "button-group">
-      <label for="audioToggle">Audio Only:</label>
-      <input type="checkbox" bind:checked={audioToggle} >
+      <label for="audioToggle">Audio:</label>
+      <input type="checkbox" on:change={updateToggles} bind:checked={$toggleAudioOnly} >
+
+      <label for="videoToggle">Video:</label>
+      <input type="checkbox" on:change={updateToggles} bind:checked={$toggleVideoOnly} >
+
       <label for="downloadClip">Download Clip:</label>
-      <input type="checkbox" bind:checked={downloadClip} >
+      <input type="checkbox" bind:checked={$downloadClip} >
     </div>
     {#if downloading}
       <progress value="{downloadPercentage}" max="100"></progress>
@@ -185,19 +210,6 @@
       <button class = "inject-button" on:click={downloadVideo}>Inject!</button>
     </div>
     
-
-      <!-- ... -->
-    <!-- <div class="button-group">
-      <button on:click={() => (count += 1)}>Count is: {count}</button>
-      <button on:click={nodeTest}>
-        <img class="icon-button" src={nodeJs} alt="" />
-      </button>
-      <button on:click={jsxTest}>
-        <img class="icon-button" src={adobe} alt="" />
-      </button>
-      <button on:click={jsxTestTS}>Ts</button>
-    </div> -->
-
   </header>
 </div>
 

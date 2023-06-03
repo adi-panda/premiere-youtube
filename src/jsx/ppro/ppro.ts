@@ -26,25 +26,41 @@ export const getFilePath = () => {
   return filePath;
 };
 
-export const insertVideoDownload = (videoPath: string) => {
-  // Get the active sequence
+export const insertVideoDownload = (videoPath: string, toggleOverwrite : boolean, toggleNoInject : boolean, 
+                                    toggleTopTrack : boolean, toggleAudioOnly : boolean) => {
 
+  // Get the active sequence
   var activeSequence = app.project.activeSequence;
   var projectItems = app.project.rootItem.children;
   // Import the video file
-  alert(videoPath);
   var importedClip = app.project.importFiles([videoPath], true, app.project.rootItem, false);
-  var videoTrack = activeSequence.videoTracks[activeSequence.videoTracks.numTracks - 1];
-  for(var i = 0; i < activeSequence.videoTracks.numTracks; i++){
-    alert("track" + i)
-    if (activeSequence.videoTracks[i].isTargeted()){
-      alert("targeted" + i)
-      var videoTrack = activeSequence.videoTracks[i];
-      break;
+  if(toggleNoInject){
+    return;
+  }
+  var tracksList = activeSequence.videoTracks;
+  if(toggleAudioOnly){
+    tracksList = activeSequence.audioTracks;
+  }
+
+  var trackToInsert = tracksList[tracksList.numTracks - 1];
+  
+
+  if(!toggleTopTrack){
+    for(var i = 0; i < tracksList.numTracks; i++){
+      if (tracksList[i].isTargeted()){
+        trackToInsert = tracksList[i];
+        break;
+      }
     }
   }
+
   // Add the imported video to the active sequence
-  
-  videoTrack.insertClip(projectItems[projectItems.numItems - 1], activeSequence.getPlayerPosition()); // Insert the clip at the start of the sequence
+  if(toggleOverwrite){
+    trackToInsert.overwriteClip(projectItems[projectItems.numItems - 1], activeSequence.getPlayerPosition()); // Insert the clip at the start of the sequence
+  } else {
+    //@ts-ignore
+    trackToInsert.insertClip(projectItems[projectItems.numItems - 1], activeSequence.getPlayerPosition()); // Insert the clip at the start of the sequence
+  }
+
 
 };

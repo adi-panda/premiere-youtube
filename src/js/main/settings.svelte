@@ -2,7 +2,7 @@
 <script>
     import {url} from "../lib/cep/node";
     import {get} from 'svelte/store';
-    import {download_path} from './stores';
+    import {download_path, toggleOverwrite, toggleTopTrack, toggleNoInject} from './stores';
     import {toggleSettings} from './stores';
     import "./main.scss";
     let result;
@@ -30,11 +30,15 @@
           </div>
           <div class = "button-group">
               <label for="Overwrite">Overwrite:</label>
-              <input type="checkbox" value="Overwrite" checked={true}>
+              <input type="checkbox" value="Overwrite" bind:checked={$toggleOverwrite}>
           </div>
           <div class = "button-group">
               <label for="Top Track">Top Track:</label>
-              <input type="checkbox" value="Top Track" checked={true}>
+              <input type="checkbox" value="Top Track" bind:checked={$toggleTopTrack}>
+          </div>
+          <div class = "button-group">
+              <label for="No Inject">No Inject:</label>
+              <input type="checkbox" value="No Inject" bind:checked={$toggleNoInject}>
           </div>
           <button on:click={switchSettings}>
             Back
