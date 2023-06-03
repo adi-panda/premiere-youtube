@@ -1,11 +1,10 @@
-
-<script>
+<script lang="ts">
     import {url} from "../lib/cep/node";
     import {get} from 'svelte/store';
     import {download_path, toggleOverwrite, toggleTopTrack, toggleNoInject} from './stores';
     import {toggleSettings} from './stores';
     import "./main.scss";
-    let result;
+    let result = "";
     const chooseFile = () => {
         result =  window.cep.fs.showOpenDialog(false, true, "Choose a file", get(download_path), null).data;
         result = url.fileURLToPath(result.toString());

@@ -1,25 +1,3 @@
-import {
-  helloError,
-  helloStr,
-  helloNum,
-  helloArrayStr,
-  helloObj,
-} from "../utils/samples";
-export { helloError, helloStr, helloNum, helloArrayStr, helloObj };
-
-export const qeDomFunction = () => {
-  if (typeof qe === "undefined") {
-    app.enableQE();
-  }
-  if (qe) {
-    qe.name;
-    qe.project.getVideoEffectByName("test");
-  }
-};
-
-export const helloWorld = () => {
-  alert("Hello from Premiere Pro.");
-};
 
 export const getFilePath = () => {
   const filePath = app.project.path;
@@ -61,6 +39,5 @@ export const insertVideoDownload = (videoPath: string, toggleOverwrite : boolean
     //@ts-ignore
     trackToInsert.insertClip(projectItems[projectItems.numItems - 1], activeSequence.getPlayerPosition()); // Insert the clip at the start of the sequence
   }
-
 
 };
