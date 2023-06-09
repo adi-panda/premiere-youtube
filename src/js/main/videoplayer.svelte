@@ -3,6 +3,8 @@
   import { inPoint, outPoint } from "./stores";
   import { get } from "svelte/store";
   let iframeApiReady = false;
+
+  //TODO: Usually want to avoid any document.getElement / createElement whenever possible, usually Svelte has a better way of handling it.
   var tag = document.createElement("script");
   tag.src = "https://www.youtube.com/iframe_api";
   var firstScriptTag = document.getElementsByTagName("script")[0];

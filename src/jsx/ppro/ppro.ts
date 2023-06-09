@@ -10,6 +10,7 @@ export const insertVideoDownload = (
   toggleTopTrack: boolean,
   toggleAudioOnly: boolean
 ) => {
+  // TODO: Can use const/let in here since it will transpile down to var
   // Get the active sequence
   var activeSequence = app.project.activeSequence;
   var projectItems = app.project.rootItem.children;
@@ -42,6 +43,8 @@ export const insertVideoDownload = (
   // Add the imported video to the active sequence
   if (toggleOverwrite) {
     trackToInsert.overwriteClip(
+      // TODO: While this works most of the time, there might be instances where it's not the last item.
+      // TODO: Might want to verify it's the same path since importFiles() doesn't return the project item files it created.
       projectItems[projectItems.numItems - 1],
       activeSequence.getPlayerPosition()
     ); // Insert the clip at the start of the sequence
