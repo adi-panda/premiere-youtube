@@ -27,8 +27,11 @@
   let downloading = false;
   let downloadPercentage = 0;
 
+  //TODO: This conditional block doesn't do anything. Can move this to onMount.
   if (!loaded) {
+    console.log("loading..........");
     loaded = true;
+    //TODO: you can use the $download_path shorthand instead of get(download_path)
     if (get(download_path) === "") {
       evalTS("getFilePath").then((res) => {
         download_path.update((n) => path.resolve(res, ".."));
@@ -42,6 +45,7 @@
   });
 
   function nthIndex(str: string, pat: string, n: number) {
+    //TODO: try and avoid using var in the JS side of things. Use let or const instead.
     var L = str.length,
       i = -1;
     while (n-- && i++ < L) {
@@ -53,6 +57,7 @@
 
   const buildYtdlpArgs = () => {
     var args = [];
+    //TODO: in bolt you can use import {path} from '../lib/cep/node' instead of require so it works in the browser and CEP without breaking
     const path = require("path");
     args.push(`--ffmpeg-location`);
     args.push(`"${__dirname}${path.sep}public"`);
@@ -77,18 +82,23 @@
     args.push(`-o`);
     args.push(
       `"${get(download_path)}${path.sep}%(title)s[${Math.floor(
+        //TODO: try using a date stamp instead of random number
         Math.random() * 1000000000
       )}].%(ext)s"`
     );
     return args;
   };
 
+  //TODO: to keep this file more lean, I would abstract these download functions to a separate .ts file and import them here
   const downloadVideo = () => {
     console.log(downloadClip);
     downloading = true;
     var url = $currentVideo;
+    //TODO: Same here, can import instead of require (giving you type safety)
     const { spawn } = require("child_process");
     var videoPath = "";
+
+    //TODO: instead of declaring a untyped variable here and assigning it later, we can just use a different path as needed
     var result;
     if (os.platform() == "win32") {
       result = spawn(`"${__dirname}\\public\\yt-dlp.exe"`, buildYtdlpArgs(), {
@@ -101,10 +111,12 @@
     }
 
     result.stdout.on("data", function (data: any) {
+      //TODO: Data should be string already, but you won't know that without using import instead of require
       console.log("stdout: " + data.toString());
       if (data.toString().includes("%")) {
         downloadPercentage = data
           .toString()
+          //TODO: use Regex instead of multiple indexes
           .substring(
             data.toString().indexOf("%") - 4,
             data.toString().indexOf("%")
@@ -204,6 +216,7 @@
   <div class="app">
     <header class="app-header">
       <button on:click={switchSettings} class="nav-button">
+        <!-- //TODO can just use a span if you need to separate text, don't usually need header tags -->
         <h7 class="home-text">Youtube Inject!</h7>
         <svg
           class="settingsLogo"
@@ -226,6 +239,7 @@
             type="search"
             bind:value={$currentVideo}
           />
+          <!-- //TODO: either pass the function without calling "player.refreshPlayer", or wrap in an arrow function "()=>player.refreshPlayer()"  -->
           <button class="search-button" on:click={player.refreshPlayer()}
             >Search</button
           >
@@ -278,6 +292,7 @@
 </body>
 
 <style>
+  /* //TODO: can add <style lang="scss"> so sass can be used  */
   .inject-group {
     display: flex;
     flex-direction: row;
@@ -311,10 +326,15 @@
   .time-button {
     background-color: aliceblue;
     color: black;
+
+    /* //TODO This can be summarized in 1 line with "padding: 3% 0%;" */
+    /* //TODO probably want to use rems instead of % for padding, otherwise size changes as the screen does */
+
     padding-left: 0%;
     padding-right: 0%;
     padding-bottom: 3%;
     padding-top: 3%;
+
     margin-bottom: 0%;
     margin-top: 0.25rem;
     width: 5rem;

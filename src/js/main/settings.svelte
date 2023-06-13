@@ -120,6 +120,7 @@
     justify-content: center;
     align-items: center;
     vertical-align: middle;
+    // TODO can consolidate these margins
     margin-left: 0%;
     margin-right: 0%;
     margin-top: 10px;
