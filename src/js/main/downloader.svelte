@@ -15,6 +15,13 @@
     toggleVideoOnly,
     downloadClip,
   } from "./stores";
+  import {
+    buildYtdlpArgs,
+    youtube_parser,
+    nthIndex,
+    switchSettings,
+    updateToggles,
+  } from "./utils";
 
   import { evalTS } from "../lib/utils/bolt";
 
@@ -22,72 +29,36 @@
 
   import "./main.scss";
 
-  let loaded = false;
   let player: any;
   let downloading = false;
   let downloadPercentage = 0;
 
-  //TODO: This conditional block doesn't do anything. Can move this to onMount.
-  if (!loaded) {
-    console.log("loading..........");
-    loaded = true;
-    //TODO: you can use the $download_path shorthand instead of get(download_path)
+  let displayInPoint: string;
+  inPoint.subscribe((value) => {
+    if (value >= 3600) {
+      displayInPoint = new Date(value * 1000).toISOString().substring(11, 19);
+    } else {
+      displayInPoint = new Date(value * 1000).toISOString().substring(14, 19);
+    }
+  });
+  let displayOutPoint: string;
+  outPoint.subscribe((value) => {
+    if (value >= 3600) {
+      displayOutPoint = new Date(value * 1000).toISOString().substring(11, 19);
+    } else {
+      displayOutPoint = new Date(value * 1000).toISOString().substring(14, 19);
+    }
+  });
+
+  onMount(() => {
+    console.log("mounted");
     if (get(download_path) === "") {
       evalTS("getFilePath").then((res) => {
         download_path.update((n) => path.resolve(res, ".."));
       });
     }
-  }
-
-  onMount(() => {
-    console.log("mounted");
     player.refreshPlayer();
   });
-
-  function nthIndex(str: string, pat: string, n: number) {
-    //TODO: try and avoid using var in the JS side of things. Use let or const instead.
-    var L = str.length,
-      i = -1;
-    while (n-- && i++ < L) {
-      i = str.indexOf(pat, i);
-      if (i < 0) break;
-    }
-    return i;
-  }
-
-  const buildYtdlpArgs = () => {
-    var args = [];
-    //TODO: in bolt you can use import {path} from '../lib/cep/node' instead of require so it works in the browser and CEP without breaking
-    const path = require("path");
-    args.push(`--ffmpeg-location`);
-    args.push(`"${__dirname}${path.sep}public"`);
-    if (get(toggleAudioOnly)) {
-      args.push(`-x`);
-      args.push(`--audio-format`);
-      args.push(`mp3`);
-    } else if (get(toggleVideoOnly)) {
-      args.push(`-f`);
-      args.push(`"bestvideo[height<=1080][ext=mp4]"`);
-    } else {
-      args.push(`-f`);
-      args.push(
-        `"bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"`
-      );
-    }
-    if (get(downloadClip)) {
-      args.push(`--download-sections`);
-      args.push(`*${$inPoint}-${$outPoint}`);
-    }
-    args.push(`"${$currentVideo}"`);
-    args.push(`-o`);
-    args.push(
-      `"${get(download_path)}${path.sep}%(title)s[${Math.floor(
-        //TODO: try using a date stamp instead of random number
-        Math.random() * 1000000000
-      )}].%(ext)s"`
-    );
-    return args;
-  };
 
   //TODO: to keep this file more lean, I would abstract these download functions to a separate .ts file and import them here
   const downloadVideo = () => {
@@ -101,13 +72,37 @@
     //TODO: instead of declaring a untyped variable here and assigning it later, we can just use a different path as needed
     var result;
     if (os.platform() == "win32") {
-      result = spawn(`"${__dirname}\\public\\yt-dlp.exe"`, buildYtdlpArgs(), {
-        shell: true,
-      });
+      result = spawn(
+        `"${__dirname}\\public\\yt-dlp.exe"`,
+        buildYtdlpArgs(
+          $toggleAudioOnly,
+          $toggleVideoOnly,
+          $downloadClip,
+          $inPoint,
+          $outPoint,
+          $currentVideo,
+          $download_path
+        ),
+        {
+          shell: true,
+        }
+      );
     } else {
-      result = spawn(`"${__dirname}/public/yt-dlp_macos"`, buildYtdlpArgs(), {
-        shell: true,
-      });
+      result = spawn(
+        `"${__dirname}/public/yt-dlp_macos"`,
+        buildYtdlpArgs(
+          $toggleAudioOnly,
+          $toggleVideoOnly,
+          $downloadClip,
+          $inPoint,
+          $outPoint,
+          $currentVideo,
+          $download_path
+        ),
+        {
+          shell: true,
+        }
+      );
     }
 
     result.stdout.on("data", function (data: any) {
@@ -165,59 +160,24 @@
       evalTS(
         "insertVideoDownload",
         videoPath,
-        get(toggleOverwrite),
-        get(toggleNoInject),
-        get(toggleTopTrack),
-        get(toggleAudioOnly)
+        $toggleOverwrite,
+        $toggleNoInject,
+        $toggleTopTrack,
+        $toggleAudioOnly
       );
     });
-  };
-
-  let displayInPoint: string;
-  inPoint.subscribe((value) => {
-    if (value >= 3600) {
-      displayInPoint = new Date(value * 1000).toISOString().substring(11, 19);
-    } else {
-      displayInPoint = new Date(value * 1000).toISOString().substring(14, 19);
-    }
-  });
-  let displayOutPoint: string;
-  outPoint.subscribe((value) => {
-    if (value >= 3600) {
-      displayOutPoint = new Date(value * 1000).toISOString().substring(11, 19);
-    } else {
-      displayOutPoint = new Date(value * 1000).toISOString().substring(14, 19);
-    }
-  });
-
-  const switchSettings = () => {
-    toggleSettings.update((n) => !n);
-  };
-
-  const updateToggles = () => {
-    if (!get(toggleAudioOnly)) {
-      toggleVideoOnly.update((n) => false);
-      console.log("audio only");
-    } else if (!get(toggleVideoOnly)) {
-      toggleAudioOnly.update((n) => false);
-      console.log("video only");
-    }
-  };
-
-  const youtube_parser = (url: string) => {
-    var regExp =
-      /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-    var match = url.match(regExp);
-    return match && match[7].length == 11 ? match[7] : false;
   };
 </script>
 
 <body>
   <div class="app">
     <header class="app-header">
-      <button on:click={switchSettings} class="nav-button">
+      <button
+        on:click={() => switchSettings(toggleSettings)}
+        class="nav-button"
+      >
         <!-- //TODO can just use a span if you need to separate text, don't usually need header tags -->
-        <h7 class="home-text">Youtube Inject!</h7>
+        <span class="home-text">Youtube Inject!</span>
         <svg
           class="settingsLogo"
           xmlns="http://www.w3.org/2000/svg"
@@ -239,60 +199,63 @@
             type="search"
             bind:value={$currentVideo}
           />
-          <!-- //TODO: either pass the function without calling "player.refreshPlayer", or wrap in an arrow function "()=>player.refreshPlayer()"  -->
-          <button class="search-button" on:click={player.refreshPlayer()}
+          <!-- TODO: either pass the function without calling "player.refreshPlayer", or wrap in an arrow function "()=>player.refreshPlayer()"  -->
+          <button class="search-button" on:click={player.refreshPlayer}
             >Search</button
           >
         </div>
         <div class="youtube-player">
-          <YouTube videoId={youtube_parser($currentVideo)} bind:this={player} />
+          <YouTube
+            videoId={() => youtube_parser($currentVideo)}
+            bind:this={player}
+          />
         </div>
         <div class="button-group">
-          <button class="point-button" on:click={() => player.setInPoint()}
+          <button class="point-button" on:click={() => player.setInPoint}
             >In</button
           >
-          <button class="time-button" on:click={() => player.goToInPoint()}>
+          <button class="time-button" on:click={() => player.goToInPoint}>
             {displayInPoint}
           </button>
-          <button class="point-button" on:click={() => player.setOutPoint()}
+          <button class="point-button" on:click={() => player.setOutPoint}
             >Out</button
           >
-          <button class="time-button" on:click={() => player.goToOutPoint()}
+          <button class="time-button" on:click={() => player.goToOutPoint}
             >{displayOutPoint}</button
           >
         </div>
+        <div class="button-group">
+          <label for="audioToggle">Audio:</label>
+          <input
+            type="checkbox"
+            on:change={() => updateToggles(toggleAudioOnly, toggleVideoOnly)}
+            bind:checked={$toggleAudioOnly}
+          />
+
+          <label for="videoToggle">Video:</label>
+          <input
+            type="checkbox"
+            on:change={() => updateToggles(toggleAudioOnly, toggleVideoOnly)}
+            bind:checked={$toggleVideoOnly}
+          />
+
+          <label for="downloadClip">Download Clip:</label>
+          <input type="checkbox" bind:checked={$downloadClip} />
+        </div>
+        <div class="inject-group">
+          <button class="inject-button" on:click={downloadVideo}>Inject!</button
+          >
+        </div>
       </article>
-
-      <div class="button-group">
-        <label for="audioToggle">Audio:</label>
-        <input
-          type="checkbox"
-          on:change={updateToggles}
-          bind:checked={$toggleAudioOnly}
-        />
-
-        <label for="videoToggle">Video:</label>
-        <input
-          type="checkbox"
-          on:change={updateToggles}
-          bind:checked={$toggleVideoOnly}
-        />
-
-        <label for="downloadClip">Download Clip:</label>
-        <input type="checkbox" bind:checked={$downloadClip} />
-      </div>
       {#if downloading}
         <progress value={downloadPercentage} max="100" />
       {/if}
-      <div class="inject-group">
-        <button class="inject-button" on:click={downloadVideo}>Inject!</button>
-      </div>
     </header>
   </div>
 </body>
 
-<style>
-  /* //TODO: can add <style lang="scss"> so sass can be used  */
+<style lang="scss">
+  @import "../index.scss";
   .inject-group {
     display: flex;
     flex-direction: row;
@@ -327,13 +290,7 @@
     background-color: aliceblue;
     color: black;
 
-    /* //TODO This can be summarized in 1 line with "padding: 3% 0%;" */
-    /* //TODO probably want to use rems instead of % for padding, otherwise size changes as the screen does */
-
-    padding-left: 0%;
-    padding-right: 0%;
-    padding-bottom: 3%;
-    padding-top: 3%;
+    padding-top: 3% 0%;
 
     margin-bottom: 0%;
     margin-top: 0.25rem;
@@ -345,6 +302,7 @@
   }
 
   .point-button {
+    background-color: $primary-700;
     width: 3rem;
     margin-bottom: 0%;
     margin-top: 0.25rem;
@@ -355,6 +313,7 @@
   }
 
   .search-button {
+    background-color: $primary-700;
     width: 4rem;
     font-size: small;
     padding-left: 0%;
