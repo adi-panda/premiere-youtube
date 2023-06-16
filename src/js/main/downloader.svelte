@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { os, path } from "../lib/cep/node";
+  import { path } from "../lib/cep/node";
+  import { evalTS } from "../lib/utils/bolt";
   import { get } from "svelte/store";
   import {
     inPoint,
@@ -16,14 +17,11 @@
     downloadClip,
   } from "./stores";
   import {
-    buildYtdlpArgs,
     youtube_parser,
-    nthIndex,
     switchSettings,
     updateToggles,
+    downloadVideo,
   } from "./utils";
-
-  import { evalTS } from "../lib/utils/bolt";
 
   import YouTube from "./videoplayer.svelte";
 
@@ -59,114 +57,6 @@
     }
     player.refreshPlayer();
   });
-
-  //TODO: to keep this file more lean, I would abstract these download functions to a separate .ts file and import them here
-  const downloadVideo = () => {
-    console.log(downloadClip);
-    downloading = true;
-    var url = $currentVideo;
-    //TODO: Same here, can import instead of require (giving you type safety)
-    const { spawn } = require("child_process");
-    var videoPath = "";
-
-    //TODO: instead of declaring a untyped variable here and assigning it later, we can just use a different path as needed
-    var result;
-    if (os.platform() == "win32") {
-      result = spawn(
-        `"${__dirname}\\public\\yt-dlp.exe"`,
-        buildYtdlpArgs(
-          $toggleAudioOnly,
-          $toggleVideoOnly,
-          $downloadClip,
-          $inPoint,
-          $outPoint,
-          $currentVideo,
-          $download_path
-        ),
-        {
-          shell: true,
-        }
-      );
-    } else {
-      result = spawn(
-        `"${__dirname}/public/yt-dlp_macos"`,
-        buildYtdlpArgs(
-          $toggleAudioOnly,
-          $toggleVideoOnly,
-          $downloadClip,
-          $inPoint,
-          $outPoint,
-          $currentVideo,
-          $download_path
-        ),
-        {
-          shell: true,
-        }
-      );
-    }
-
-    result.stdout.on("data", function (data: any) {
-      //TODO: Data should be string already, but you won't know that without using import instead of require
-      console.log("stdout: " + data.toString());
-      if (data.toString().includes("%")) {
-        downloadPercentage = data
-          .toString()
-          //TODO: use Regex instead of multiple indexes
-          .substring(
-            data.toString().indexOf("%") - 4,
-            data.toString().indexOf("%")
-          );
-      }
-      if (data.toString().includes("Destination:")) {
-        videoPath = data
-          .toString()
-          .substring(
-            data.toString().indexOf("Destination:") + 13,
-            data.toString().length - 1
-          );
-        console.log(videoPath);
-      }
-      if (data.toString().includes("Merging formats into")) {
-        videoPath = data
-          .toString()
-          .substring(
-            data.toString().indexOf('"') + 1,
-            nthIndex(data.toString(), '"', 2)
-          );
-        console.log(data.toString());
-        console.log(videoPath);
-      }
-      if (data.toString().includes("has already been downloaded")) {
-        videoPath = data
-          .toString()
-          .substring(
-            data.toString().indexOf("[download] ") + 11,
-            data.toString().indexOf(" has already been downloaded")
-          );
-        console.log(videoPath);
-      }
-      if (data.toString().includes("Deleting original file")) {
-        downloadPercentage = 0;
-      }
-    });
-
-    result.stderr.on("data", function (data: any) {
-      console.log("stderr: " + data.toString());
-    });
-
-    result.on("exit", function (code: any) {
-      console.log("child process exited with code " + code.toString());
-      downloading = false;
-      evalTS(
-        "insertVideoDownload",
-        videoPath,
-        $toggleOverwrite,
-        $toggleNoInject,
-        $toggleTopTrack,
-        $toggleAudioOnly
-      );
-    });
-  };
 </script>
 
 <body>
@@ -176,7 +66,6 @@
         on:click={() => switchSettings(toggleSettings)}
         class="nav-button"
       >
-        <!-- //TODO can just use a span if you need to separate text, don't usually need header tags -->
         <span class="home-text">Youtube Inject!</span>
         <svg
           class="settingsLogo"
@@ -199,7 +88,6 @@
             type="search"
             bind:value={$currentVideo}
           />
-          <!-- TODO: either pass the function without calling "player.refreshPlayer", or wrap in an arrow function "()=>player.refreshPlayer()"  -->
           <button class="search-button" on:click={player.refreshPlayer}
             >Search</button
           >
@@ -243,7 +131,23 @@
           <input type="checkbox" bind:checked={$downloadClip} />
         </div>
         <div class="inject-group">
-          <button class="inject-button" on:click={downloadVideo}>Inject!</button
+          <button
+            class="inject-button"
+            on:click={() =>
+              downloadVideo(
+                downloadClip,
+                downloading,
+                downloadPercentage,
+                currentVideo,
+                toggleAudioOnly,
+                toggleVideoOnly,
+                inPoint,
+                outPoint,
+                download_path,
+                toggleOverwrite,
+                toggleNoInject,
+                toggleTopTrack
+              )}>Inject!</button
           >
         </div>
       </article>

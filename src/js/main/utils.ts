@@ -1,7 +1,9 @@
 import { Writable, get } from "svelte/store";
-import { path } from "../lib/cep/node";
+import { os, path, child_process } from "../lib/cep/node";
+import { evalTS } from "../lib/utils/bolt";
+import { ChildProcessWithoutNullStreams } from "child_process";
 
-export const buildYtdlpArgs = (
+const buildYtdlpArgs = (
   toggleAudioOnly: boolean,
   toggleVideoOnly: boolean,
   downloadClip: boolean,
@@ -44,7 +46,7 @@ export const youtube_parser = (url: string) => {
   return match && match[7].length == 11 ? match[7] : false;
 };
 
-export const nthIndex = (str: string, pat: string, n: number) => {
+const nthIndex = (str: string, pat: string, n: number) => {
   let L = str.length,
     i = -1;
   while (n-- && i++ < L) {
@@ -69,4 +71,107 @@ export const updateToggles = (
     toggleAudioOnly.update((n) => false);
     console.log("video only");
   }
+};
+
+export const downloadVideo = (
+  downloadClip: Writable<boolean>,
+  downloading: boolean,
+  downloadPercentage: number,
+  currentVideo: Writable<string>,
+  toggleAudioOnly: Writable<boolean>,
+  toggleVideoOnly: Writable<boolean>,
+  inPoint: Writable<number>,
+  outPoint: Writable<number>,
+  download_path: Writable<string>,
+  toggleOverwrite: Writable<boolean>,
+  toggleNoInject: Writable<boolean>,
+  toggleTopTrack: Writable<boolean>
+) => {
+  downloading = true;
+  let url = get(currentVideo);
+  let videoPath = "";
+  let result: ChildProcessWithoutNullStreams;
+  if (os.platform() == "win32") {
+    result = child_process.spawn(
+      `"${__dirname}\\public\\yt-dlp.exe"`,
+      buildYtdlpArgs(
+        get(toggleAudioOnly),
+        get(toggleVideoOnly),
+        get(downloadClip),
+        get(inPoint),
+        get(outPoint),
+        get(currentVideo),
+        get(download_path)
+      ),
+      {
+        shell: true,
+      }
+    );
+  } else {
+    result = child_process.spawn(
+      `"${__dirname}/public/yt-dlp_macos"`,
+      buildYtdlpArgs(
+        get(toggleAudioOnly),
+        get(toggleVideoOnly),
+        get(downloadClip),
+        get(inPoint),
+        get(outPoint),
+        get(currentVideo),
+        get(download_path)
+      ),
+      {
+        shell: true,
+      }
+    );
+  }
+
+  result.stdout.on("data", function (data) {
+    console.log("stdout: " + data);
+    if (data.toString().includes("%")) {
+      downloadPercentage = data
+        .toString()
+        //TODO: use Regex instead of multiple indexes
+        .substring(data.indexOf("%") - 4, data.indexOf("%"));
+    }
+    if (data.toString().includes("Destination:")) {
+      videoPath = data
+        .toString()
+        .substring(data.indexOf("Destination:") + 13, data.length - 1);
+      console.log(videoPath);
+    }
+    if (data.includes("Merging formats into")) {
+      videoPath = data.substring(data.indexOf('"') + 1, nthIndex(data, '"', 2));
+      console.log(data.toString());
+      console.log(videoPath);
+    }
+    if (data.toString().includes("has already been downloaded")) {
+      videoPath = data
+        .toString()
+        .substring(
+          data.indexOf("[download] ") + 11,
+          data.indexOf(" has already been downloaded")
+        );
+      console.log(videoPath);
+    }
+    if (data.includes("Deleting original file")) {
+      downloadPercentage = 0;
+    }
+  });
+
+  result.stderr.on("data", function (data: any) {
+    console.log("stderr: " + data);
+  });
+
+  result.on("exit", function (code: any) {
+    console.log("child process exited with code " + code.toString());
+    downloading = false;
+    evalTS(
+      "insertVideoDownload",
+      videoPath,
+      get(toggleOverwrite),
+      get(toggleNoInject),
+      get(toggleTopTrack),
+      get(toggleAudioOnly)
+    );
+  });
 };
