@@ -151,9 +151,7 @@
           >
         </div>
       </article>
-      {#if downloading}
-        <progress value={downloadPercentage} max="100" />
-      {/if}
+      <progress value={downloadPercentage} max="100" />
     </header>
   </div>
 </body>

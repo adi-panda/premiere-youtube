@@ -1,6 +1,7 @@
 <script lang="ts">
   import { url } from "../lib/cep/node";
   import { get } from "svelte/store";
+  import { switchSettings } from "./utils";
   import {
     download_path,
     toggleOverwrite,
@@ -21,15 +22,15 @@
     result = url.fileURLToPath(result.toString());
     download_path.update((n) => result);
   };
-  const switchSettings = () => {
-    toggleSettings.update((n) => !n);
-  };
 </script>
 
 <body>
   <div class="app">
     <header class="app-header">
-      <button class="nav-button" on:click={switchSettings}>
+      <button
+        class="nav-button"
+        on:click={() => switchSettings(toggleSettings)}
+      >
         <h7 class="settings-text">Settings</h7>
         <svg
           class="settingsLogo"
@@ -120,11 +121,7 @@
     justify-content: center;
     align-items: center;
     vertical-align: middle;
-    // TODO can consolidate these margins
-    margin-left: 0%;
-    margin-right: 0%;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin: 0 0 10px 10px;
   }
   .settings-text {
     margin: 0%;
