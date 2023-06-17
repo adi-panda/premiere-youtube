@@ -25,8 +25,6 @@
 
   import YouTube from "./videoplayer.svelte";
 
-  import "./main.scss";
-
   let player: any;
   let downloading = false;
   let downloadPercentage = 0;
@@ -55,7 +53,7 @@
         download_path.update((n) => path.resolve(res, ".."));
       });
     }
-    player.refreshPlayer();
+    player.refreshPlayer;
   });
 </script>
 
@@ -150,8 +148,8 @@
               )}>Inject!</button
           >
         </div>
+        <progress value={downloadPercentage} max="100" />
       </article>
-      <progress value={downloadPercentage} max="100" />
     </header>
   </div>
 </body>

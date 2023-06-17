@@ -9,7 +9,6 @@
     toggleNoInject,
   } from "./stores";
   import { toggleSettings } from "./stores";
-  import "./main.scss";
   let result = "";
   const chooseFile = () => {
     result = window.cep.fs.showOpenDialog(
