@@ -12,7 +12,12 @@ html {
 }
 
 h1 {
-  margin-bottom: 0%;
+  margin-bottom: 0rem;
+}
+
+h6 {
+  padding: 0.5rem 0rem 0rem 0rem;
+  margin-bottom: 0.5rem;
 }
 
 .app {
@@ -71,13 +76,6 @@ button:hover {
   background-color: $primary-700;
   margin: 0px;
   padding: 8px;
-}
-
-.settingsLogo {
-  margin-left: 28rem;
-  width: 32px;
-  height: 32px;
-  fill: #fff;
 }
 
 ::-webkit-scrollbar {

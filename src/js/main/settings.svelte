@@ -26,24 +26,24 @@
 <body>
   <div class="app">
     <header class="app-header">
-      <button
-        class="nav-button"
-        on:click={() => switchSettings(toggleSettings)}
-      >
-        <h7 class="settings-text">Settings</h7>
-        <svg
-          class="settingsLogo"
-          xmlns="http://www.w3.org/2000/svg"
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          ><path
-            fill="currentColor"
-            d="M19 7v4H5.83l3.58-3.59L8 6l-6 6l6 6l1.41-1.41L5.83 13H21V7z"
-          /></svg
-        >
-      </button>
       <article class="settings">
+        <button
+          class="nav-button"
+          on:click={() => switchSettings(toggleSettings)}
+        >
+          <span class="settings-text">Settings</span>
+          <svg
+            class="backLogo"
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            ><path
+              fill="currentColor"
+              d="M19 7v4H5.83l3.58-3.59L8 6l-6 6l6 6l1.41-1.41L5.83 13H21V7z"
+            /></svg
+          >
+        </button>
         <h6>Download Path:</h6>
         <div class="button-group">
           <input
@@ -94,15 +94,18 @@
 </body>
 
 <style lang="scss">
+  .settings {
+    width: 28rem;
+  }
   .app-header {
-    padding-bottom: 16.5rem;
+    padding-bottom: 21.2rem;
   }
 
   .folder-button {
-    padding-left: 0%;
-    padding-right: 0%;
-    padding-top: 2%;
-    padding-bottom: 3%;
+    padding-left: 0rem;
+    padding-right: 0rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.6rem;
     width: 3rem;
   }
 
@@ -110,8 +113,11 @@
     width: 20rem;
   }
 
-  .settings {
-    width: 27rem;
+  .backLogo {
+    margin-left: 23rem;
+    width: 32px;
+    height: 32px;
+    fill: #fff;
   }
 
   .button-group {
@@ -123,9 +129,9 @@
     margin: 0 0 10px 10px;
   }
   .settings-text {
-    margin: 0%;
+    margin: 0rem;
     position: absolute;
     padding-top: 0.2rem;
-    padding-left: 13rem;
+    padding-left: 10.7rem;
   }
 </style>

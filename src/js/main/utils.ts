@@ -39,13 +39,6 @@ const buildYtdlpArgs = (
   return args;
 };
 
-export const youtube_parser = (url: string) => {
-  var regExp =
-    /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-  var match = url.match(regExp);
-  return match && match[7].length == 11 ? match[7] : false;
-};
-
 const nthIndex = (str: string, pat: string, n: number) => {
   let L = str.length,
     i = -1;
@@ -75,8 +68,7 @@ export const updateToggles = (
 
 export const downloadVideo = (
   downloadClip: Writable<boolean>,
-  downloading: boolean,
-  downloadPercentage: number,
+  downloadPercentage: Writable<number>,
   currentVideo: Writable<string>,
   toggleAudioOnly: Writable<boolean>,
   toggleVideoOnly: Writable<boolean>,
@@ -87,7 +79,6 @@ export const downloadVideo = (
   toggleNoInject: Writable<boolean>,
   toggleTopTrack: Writable<boolean>
 ) => {
-  downloading = true;
   let url = get(currentVideo);
   let videoPath = "";
   let result: ChildProcessWithoutNullStreams;
@@ -128,33 +119,23 @@ export const downloadVideo = (
   result.stdout.on("data", function (data) {
     console.log("stdout: " + data);
     if (data.toString().includes("%")) {
-      downloadPercentage = data
-        .toString()
-        //TODO: use Regex instead of multiple indexes
-        .substring(data.indexOf("%") - 4, data.indexOf("%"));
+      downloadPercentage.update((n) =>
+        data.toString().substring(data.indexOf("%") - 4, data.indexOf("%"))
+      );
     }
     if (data.toString().includes("Destination:")) {
       videoPath = data
         .toString()
-        .substring(data.indexOf("Destination:") + 13, data.length - 1);
+        .substring(data.indexOf("Destination:") + 13, data.length - 3);
       console.log(videoPath);
     }
-    if (data.includes("Merging formats into")) {
-      videoPath = data.substring(data.indexOf('"') + 1, nthIndex(data, '"', 2));
-      console.log(data.toString());
-      console.log(videoPath);
-    }
-    if (data.toString().includes("has already been downloaded")) {
+    if (data.toString().includes("Merging formats into")) {
       videoPath = data
         .toString()
-        .substring(
-          data.indexOf("[download] ") + 11,
-          data.indexOf(" has already been downloaded")
-        );
-      console.log(videoPath);
+        .substring(data.indexOf('"') + 1, nthIndex(data, '"', 2) - 2);
     }
     if (data.includes("Deleting original file")) {
-      downloadPercentage = 0;
+      downloadPercentage.update((n) => 0);
     }
   });
 
@@ -164,7 +145,7 @@ export const downloadVideo = (
 
   result.on("exit", function (code: any) {
     console.log("child process exited with code " + code.toString());
-    downloading = false;
+    console.log("video path is " + videoPath);
     evalTS(
       "insertVideoDownload",
       videoPath,
@@ -174,4 +155,11 @@ export const downloadVideo = (
       get(toggleAudioOnly)
     );
   });
+};
+
+export const youtube_parser = (url: string) => {
+  var regExp =
+    /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+  var match = url.match(regExp);
+  return match && match[7].length == 11 ? match[7] : false;
 };
